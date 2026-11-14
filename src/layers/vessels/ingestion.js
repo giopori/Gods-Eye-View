@@ -112,6 +112,8 @@ export function createIngestion({
         ownsAisRequest(requestController, requestSessionId) &&
         error?.name !== 'AbortError'
       ) {
+        if (typeof error?.feedStatus === 'string')
+          feed.transportStatus = error.feedStatus;
         markUnavailable(error?.message || msg('AIS live load failed'));
         console.warn('[Data:ais-live-vessels]', feed.error, error);
       }

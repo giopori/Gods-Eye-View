@@ -618,7 +618,7 @@ test('AIS first-connect grace expiry reports failure even without a terminal man
   );
 });
 
-test('participant stats failure outranks a simultaneous visibility completion', () => {
+function settleVesselsWith(stats) {
   const enabling = aggregateLayerLoading([
     {
       id: 'ais-live-vessels',
@@ -629,23 +629,43 @@ test('participant stats failure outranks a simultaneous visibility completion', 
   ]);
   let state = reduceLoadingFeedback(createLoadingFeedbackState(), enabling, 0);
   state = reduceLoadingFeedback(state, enabling, 200);
-
-  const missingKey = aggregateLayerLoading([
+  const settled = aggregateLayerLoading([
     {
       id: 'ais-live-vessels',
       name: 'AIS Vessels',
       enabled: true,
       lifecycleState: 'enabled',
-      stats: { loading: false, keyRequired: true },
+      stats: { loading: false, ...stats },
     },
   ]);
-  state = reduceLoadingFeedback(state, missingKey, 250, {
+  return reduceLoadingFeedback(state, settled, 250, {
     type: 'visibility',
     layerId: 'ais-live-vessels',
     enabled: true,
   });
+}
 
+test('participant stats failure outranks a simultaneous visibility completion', () => {
+  const state = settleVesselsWith({
+    error: 'feed down',
+    status: 'unavailable',
+  });
   assert.equal(state.terminal, 'error');
+});
+
+test('a layer waiting on a provider key is not a failed load', () => {
+  // Keyless, the layer row reads KEY REQUIRED and names the key; the global
+  // chip must not fold that setup step into LOAD FAILED.
+  const state = settleVesselsWith({
+    keyRequired: true,
+    error: 'AISSTREAM_API_KEY not set',
+    status: 'unavailable',
+  });
+  assert.equal(state.terminal, 'complete');
+  assert.equal(
+    presentLoadingFeedback(state, aggregateLayerLoading([]), 300)?.label,
+    'LOAD COMPLETE',
+  );
 });
 
 test('retains the worst terminal outcome until every concurrent load drains', () => {

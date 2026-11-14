@@ -85,10 +85,14 @@ export function normalizeLayerLoading(layer = {}) {
 function terminalFromParticipantStats(summary, participantIds) {
   if (!participantIds?.length) return null;
   const participants = new Set(participantIds);
+  // A layer waiting on a provider key has not failed to load: its own row
+  // already reads KEY REQUIRED and names the key, so it stays out of the
+  // batch outcome instead of turning the global chip into LOAD FAILED.
   return summary.records.some(
     (record) =>
       participants.has(record.id) &&
-      (record.error || record.unavailable || record.keyRequired),
+      !record.keyRequired &&
+      (record.error || record.unavailable),
   )
     ? 'error'
     : null;

@@ -719,6 +719,9 @@ export function createQueries({
             ? 'unavailable'
             : undefined,
         transportStatus: state.feed.transportStatus,
+        // Same field FIRMS reports: no AISStream key is a setup step, not a
+        // broken feed, so the global status chip must not call it a failure.
+        keyRequired: state.feed.transportStatus === 'missing-key',
         lastMessageAt: state.feed.lastMessageAt,
         rawRowCount: state.feed.rawRowCount,
         acceptedRowCount: state.feed.acceptedRowCount,

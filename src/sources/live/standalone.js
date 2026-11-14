@@ -261,6 +261,10 @@ export function createVesselSource({
           closed: 'feed disconnected',
         };
         error.message = reasons[payload?.status] || error.message;
+        // Keep the server's feed status so the layer can tell a missing key
+        // (a setup step) from a feed that is down.
+        if (typeof payload?.status === 'string')
+          error.feedStatus = payload.status;
         throw error;
       }
       return {
